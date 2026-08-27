@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const companies = await prisma.company.findMany({
     where: q
-      ? { OR: [{ name: { contains: q } }, { domain: { contains: q } }, { industry: { contains: q } }] }
+      ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { domain: { contains: q, mode: "insensitive" } }, { industry: { contains: q, mode: "insensitive" } }] }
       : undefined,
     include: {
       owner: { select: { id: true, name: true, avatarColor: true } },

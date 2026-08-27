@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const deals = await prisma.deal.findMany({
     where: {
       AND: [
-        q ? { title: { contains: q } } : {},
+        q ? { title: { contains: q, mode: "insensitive" } } : {},
         stage ? { stage: stage as never } : {},
       ],
     },

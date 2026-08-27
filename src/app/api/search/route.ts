@@ -13,21 +13,21 @@ export async function GET(req: NextRequest) {
     prisma.contact.findMany({
       where: {
         OR: [
-          { firstName: { contains: q } },
-          { lastName: { contains: q } },
-          { email: { contains: q } },
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } },
         ],
       },
       select: { id: true, firstName: true, lastName: true, email: true, company: { select: { name: true } } },
       take: 5,
     }),
     prisma.company.findMany({
-      where: { OR: [{ name: { contains: q } }, { domain: { contains: q } }] },
+      where: { OR: [{ name: { contains: q, mode: "insensitive" } }, { domain: { contains: q, mode: "insensitive" } }] },
       select: { id: true, name: true, domain: true },
       take: 5,
     }),
     prisma.deal.findMany({
-      where: { title: { contains: q } },
+      where: { title: { contains: q, mode: "insensitive" } },
       select: { id: true, title: true, value: true },
       take: 5,
     }),
