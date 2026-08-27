@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarColor  String   @default("#6d4cff")
+  createdAt    DateTime @default(now())
+
+  ownedCompanies Company[]
+  ownedContacts  Contact[]
+  ownedDeals     Deal[]
+  tasks          Task[]
+  activities     Activity[]
+}
+
+enum ContactStatus {
+  LEAD
+  PROSPECT
+  CUSTOMER
+  CHURNED
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  industry  String?
+  size      String?
+  phone     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  contacts   Contact[]
+  deals      Deal[]
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([ownerId])
+}
+
+model Contact {
+  id        String        @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  title     String?
+  status    ContactStatus @default(LEAD)
+  source    String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  deals      Deal[]
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([companyId])
+  @@index([ownerId])
+}
+
+enum DealStage {
+  NEW
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model Deal {
+  id          String    @id @default(cuid())
+  title       String
+  value       Float     @default(0)
+  stage       DealStage @default(NEW)
+  probability Int       @default(20)
+  closeDate   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  tasks      Task[]
+  activities Activity[]
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([ownerId])
+  @@index([stage])
+}
+
+enum TaskType {
+  CALL
+  EMAIL
+  MEETING
+  FOLLOW_UP
+  TODO
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        TaskType  @default(TODO)
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  dealId String?
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([dealId])
+  @@index([dueDate])
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  STATUS_CHANGE
+  CREATED
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType @default(NOTE)
+  content   String
+  createdAt DateTime     @default(now())
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  dealId String?
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([companyId])
+  @@index([dealId])
+}
