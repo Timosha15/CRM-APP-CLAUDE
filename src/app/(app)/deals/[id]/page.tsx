@@ -26,7 +26,7 @@ type DealDetail = {
   notes: string | null;
   company: { id: string; name: string } | null;
   companyId: string | null;
-  contact: { id: string; firstName: string; lastName: string } | null;
+  contact: { id: string; firstName: string; lastName: string; email: string | null } | null;
   contactId: string | null;
   owner: { id: string; name: string; avatarColor: string } | null;
   tasks: MiniTask[];
@@ -120,6 +120,8 @@ export default function DealDetailPage() {
                 dealId={deal.id}
                 companyId={deal.companyId}
                 contactId={deal.contactId}
+                sendEmailUrl={`/api/deals/${deal.id}/send-email`}
+                recipientEmail={deal.contact?.email}
                 onAdded={(a) => setDeal((d) => (d ? { ...d, activities: [a, ...d.activities] } : d))}
               />
             </CardContent>

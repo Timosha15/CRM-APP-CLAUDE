@@ -49,6 +49,55 @@ Without `DATABASE_URL` set, the build fails at the `prisma generate` step and
 Vercel will show a plain `404: NOT_FOUND` for every route, since there's no
 successful deployment to route to.
 
+## Email: sending + task reminders
+
+Emails are sent through [Resend](https://resend.com) (free tier). Without it
+configured, sending an email or requesting a reminder returns a clear
+"email isn't configured" error instead of failing silently.
+
+1. Create a free Resend account and grab an API key.
+2. Add to your environment (locally in `.env`, and in Vercel's Environment
+   Variables for production):
+   - `RESEND_API_KEY` — your key.
+   - `EMAIL_FROM` — defaults to `Victor <onboarding@resend.dev>`, Resend's
+     shared test sender (works immediately, no domain setup). To send from
+     your own domain, [verify it in Resend](https://resend.com/docs/dashboard/domains/introduction)
+     and set this to an address on it.
+   - `NEXT_PUBLIC_APP_URL` — your deployed URL (e.g. `https://your-app.vercel.app`),
+     used for links inside emails.
+   - `CRON_SECRET` — any random string. Vercel sends it automatically as a
+     bearer token when it triggers the scheduled job below, so the endpoint
+     can tell a real cron call from a random request.
+3. `vercel.json` already schedules `/api/cron/task-reminders` to run daily
+   (Vercel Cron, included on the free Hobby plan). It emails each user a
+   digest of their overdue + due-today tasks and marks them so the same
+   task isn't reminded about twice in one day. Nothing to configure beyond
+   the env vars above — it starts working on your next deploy.
+4. To test without waiting for the schedule, open **Tasks** in the app and
+   click **Email me a reminder** — it sends your own digest immediately.
+
+Sending a real email from a contact or deal page (the **Email** tab in the
+activity composer) works the same way — it needs `RESEND_API_KEY` set, sends
+through Resend, and logs the result (sent or failed, with the reason) to that
+record's activity timeline either way.
+
+If you set up your database before this feature existed, your existing table
+won't have the columns it needs. Run this once against your database (Neon's
+SQL Editor, or `psql`) to add them:
+
+```sql
+-- CreateEnum
+CREATE TYPE "EmailStatus" AS ENUM ('SENT', 'FAILED');
+
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN "reminderSentAt" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "Activity" ADD COLUMN "emailStatus" "EmailStatus", ADD COLUMN "subject" TEXT;
+```
+
+(Anyone starting fresh doesn't need this — `npm run db:push` already includes it.)
+
 ## Features
 
 - **Dashboard** — pipeline value, won-this-month, task alerts, pipeline-by-stage
@@ -60,8 +109,11 @@ successful deployment to route to.
 - **Tasks** — calls, emails, meetings, and to-dos with due-date filters
   (today / overdue / upcoming / completed).
 - **Global search** — jump to any contact, company, or deal from the top bar.
-- **Activity timeline** — log notes, calls, and emails against any record; status
-  changes are logged automatically.
+- **Activity timeline** — log notes and calls, or send real emails (via
+  Resend) against any contact/deal; status changes are logged automatically.
+- **Task reminder emails** — a daily digest of overdue + due-today tasks,
+  emailed to each user automatically (Vercel Cron), plus an on-demand
+  "Email me a reminder" button.
 
 ## Scripts
 

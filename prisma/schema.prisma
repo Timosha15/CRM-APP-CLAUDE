@@ -126,14 +126,15 @@ enum TaskType {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  type        TaskType  @default(TODO)
-  dueDate     DateTime?
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  type           TaskType  @default(TODO)
+  dueDate        DateTime?
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  reminderSentAt DateTime?
+  createdAt      DateTime  @default(now())
 
   ownerId String?
   owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
@@ -162,11 +163,18 @@ enum ActivityType {
   CREATED
 }
 
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
 model Activity {
-  id        String       @id @default(cuid())
-  type      ActivityType @default(NOTE)
-  content   String
-  createdAt DateTime     @default(now())
+  id          String       @id @default(cuid())
+  type        ActivityType @default(NOTE)
+  content     String
+  subject     String?
+  emailStatus EmailStatus?
+  createdAt   DateTime     @default(now())
 
   ownerId String?
   owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)

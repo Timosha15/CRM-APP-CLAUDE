@@ -110,6 +110,8 @@ export default function ContactDetailPage() {
                 activities={contact.activities}
                 contactId={contact.id}
                 companyId={contact.companyId}
+                sendEmailUrl={`/api/contacts/${contact.id}/send-email`}
+                recipientEmail={contact.email}
                 onAdded={(a) => setContact((c) => (c ? { ...c, activities: [a, ...c.activities] } : c))}
               />
             </CardContent>

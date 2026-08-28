@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { TaskForm } from "@/components/tasks/TaskForm";
-import { IconCheckSquare, IconPlus, IconClock, IconPhone, IconMail, IconCalendar, IconNote } from "@/components/ui/icons";
+import { IconCheckSquare, IconPlus, IconClock, IconPhone, IconMail, IconCalendar, IconNote, IconAlert } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { TASK_TYPE_LABEL } from "@/lib/labels";
 import type { TaskType } from "@prisma/client";
@@ -45,6 +45,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("open");
   const [modalOpen, setModalOpen] = useState(false);
+  const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/tasks?filter=${filter}`);
@@ -66,17 +68,48 @@ export default function TasksPage() {
     load();
   }
 
+  async function sendReminder() {
+    setSendingReminder(true);
+    setReminderStatus(null);
+    try {
+      const res = await fetch("/api/tasks/send-test-reminder", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setReminderStatus(data.error ?? "Couldn't send the reminder email.");
+      } else if (data.sent === false) {
+        setReminderStatus(data.message);
+      } else {
+        setReminderStatus(`Sent — ${data.overdueCount} overdue, ${data.dueTodayCount} due today.`);
+      }
+    } catch {
+      setReminderStatus("Network error. Please try again.");
+    } finally {
+      setSendingReminder(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title="Tasks"
         description="Calls, follow-ups, and to-dos across your pipeline."
         actions={
-          <Button onClick={() => setModalOpen(true)}>
-            <IconPlus className="h-4 w-4" /> New task
-          </Button>
+          <>
+            <Button variant="outline" onClick={sendReminder} disabled={sendingReminder}>
+              <IconMail className="h-4 w-4" /> {sendingReminder ? "Sending…" : "Email me a reminder"}
+            </Button>
+            <Button onClick={() => setModalOpen(true)}>
+              <IconPlus className="h-4 w-4" /> New task
+            </Button>
+          </>
         }
       />
+      {reminderStatus ? (
+        <div className="mx-4 mt-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600 sm:mx-6">
+          <IconAlert className="h-4 w-4 shrink-0 text-slate-400" />
+          {reminderStatus}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5 px-4 py-4 sm:px-6">
         {filters.map((f) => (
